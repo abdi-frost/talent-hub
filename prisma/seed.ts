@@ -1,8 +1,28 @@
+import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { hashSync } from "bcryptjs";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+// Ensure DATABASE_URL is present and avoid IPv6 localhost (::1) issues
+const rawDbUrl = process.env.DATABASE_URL;
+if (!rawDbUrl) {
+  console.error("DATABASE_URL environment variable is not set. Aborting seed.");
+  process.exit(1);
+}
+
+let connectionString = rawDbUrl;
+try {
+  const url = new URL(rawDbUrl);
+  if (url.hostname === "localhost") {
+    url.hostname = "127.0.0.1";
+    connectionString = url.toString();
+    console.log("Using 127.0.0.1 for localhost in DATABASE_URL to avoid IPv6 (::1) issues");
+  }
+} catch (e) {
+  // fall back to raw connection string if parsing fails
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {

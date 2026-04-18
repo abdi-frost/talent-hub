@@ -7,11 +7,33 @@
  * After the initial seed, admins can add further entries through the
  * admin API (POST /api/admin/skills, POST /api/admin/primary-skills).
  */
+import "dotenv/config";
 import { PrismaClient } from "../generated/prisma/client/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { SKILLS_SEED, PRIMARY_SKILLS_SEED } from "../lib/constants";
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+// Ensure `DATABASE_URL` is loaded and avoid connecting to IPv6 localhost (::1)
+const rawDbUrl = process.env.DATABASE_URL;
+if (!rawDbUrl) {
+  console.error("DATABASE_URL environment variable is not set. Aborting seed.");
+  process.exit(1);
+}
+
+let connectionString = rawDbUrl;
+try {
+  const url = new URL(rawDbUrl);
+  if (url.hostname === "localhost") {
+    // Some systems resolve `localhost` to ::1 which PostgreSQL may not be listening on.
+    // Force IPv4 loopback to avoid P1001 connection errors.
+    url.hostname = "127.0.0.1";
+    connectionString = url.toString();
+    console.log("Using 127.0.0.1 for localhost in DATABASE_URL to avoid IPv6 (::1) issues");
+  }
+} catch (e) {
+  // ignore URL parse errors — fall back to raw connection string
+}
+
+const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
