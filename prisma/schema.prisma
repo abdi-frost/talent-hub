@@ -1,0 +1,70 @@
+generator client {
+    provider = "prisma-client"
+    output   = "../generated/prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+}
+
+// ── Models ────────────────────────────────────────────────────────
+
+model Talent {
+    id                String    @id @default(cuid())
+    fullName          String
+    email             String    @unique
+    /// Denormalised name from PrimarySkill table — validated at API layer
+    primarySkill      String
+    /// Denormalised skill names from Skill table — validated at API layer
+    skills            String[]
+    yearsOfExperience Int
+    description       String
+    /// "PENDING" | "APPROVED" | "REJECTED" — managed as TS enum (TalentStatus)
+    status            String    @default("PENDING")
+    location          String?
+    portfolioUrl      String?
+    /// Soft-delete timestamp — null means the record is active
+    deletedAt         DateTime?
+    createdAt         DateTime  @default(now())
+    updatedAt         DateTime  @updatedAt
+
+    @@index([skills], type: Gin)
+    @@index([status])
+    @@index([primarySkill])
+    @@index([yearsOfExperience])
+    @@index([deletedAt])
+    @@map("talents")
+}
+
+model Admin {
+    id                     String    @id @default(cuid())
+    username               String    @unique
+    email                  String    @unique
+    password               String
+    lastLoginAt            DateTime?
+    /// Token for password-reset flow; cleared after use
+    passwordResetToken     String?   @unique
+    passwordResetExpiresAt DateTime?
+    createdAt              DateTime  @default(now())
+    updatedAt              DateTime  @updatedAt
+
+    @@map("admins")
+}
+
+/// Canonical list of individual skills. Seeded on first run; admins can add more.
+model Skill {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    createdAt DateTime @default(now())
+
+    @@map("skills")
+}
+
+/// High-level career-path categories (Frontend, Backend, …). Seeded on first run.
+model PrimarySkill {
+    id        String   @id @default(cuid())
+    name      String   @unique
+    createdAt DateTime @default(now())
+
+    @@map("primary_skills")
+}
