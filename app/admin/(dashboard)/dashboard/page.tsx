@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { requireAdmin } from "@/lib/auth";
+import { TalentTable } from "@/components/admin/talent-table";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Talent Records",
 };
 
 export default async function AdminDashboardPage() {
@@ -11,13 +12,14 @@ export default async function AdminDashboardPage() {
   return (
     <div>
       <div className="flex items-end justify-between mb-10 border-b border-[var(--color-border-light)] pb-6">
-        <h1 className="font-display text-5xl">Talent Records</h1>
-        {/* Action buttons (add talent, refresh) go here */}
+        <div>
+          <h1 className="font-display text-5xl">Talent Records</h1>
+          <p className="text-sm text-[var(--color-muted)] mt-1">
+            Manage all talent submissions — review, update or remove records.
+          </p>
+        </div>
       </div>
-      {/* TalentTable component goes here */}
-      <p className="text-[var(--color-muted)] text-sm">
-        No talent records yet. Submit profiles via the public form.
-      </p>
+      <TalentTable />
     </div>
   );
 }

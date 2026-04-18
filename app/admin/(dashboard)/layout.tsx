@@ -26,16 +26,34 @@ export default function AdminDashboardLayout({
             {APP_NAME} — Admin
           </Link>
 
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-1">
             <Link
               href="/admin/dashboard"
-              className="text-sm border-b border-transparent hover:border-[var(--color-background)] transition-colors"
+              className="text-sm px-4 py-2 border border-transparent hover:border-[var(--color-background)]/30 transition-colors"
             >
               Talents
             </Link>
+            <Link
+              href="/admin/skills"
+              className="text-sm px-4 py-2 border border-transparent hover:border-[var(--color-background)]/30 transition-colors"
+            >
+              Skills
+            </Link>
+            <Link
+              href="/admin/primary-skills"
+              className="text-sm px-4 py-2 border border-transparent hover:border-[var(--color-background)]/30 transition-colors"
+            >
+              Categories
+            </Link>
+            <Link
+              href="/admin/admins"
+              className="text-sm px-4 py-2 border border-transparent hover:border-[var(--color-background)]/30 transition-colors"
+            >
+              Admins
+            </Link>
 
             {/* Sign Out via API route */}
-            <form action="/api/auth/logout" method="POST">
+            <form action="/api/auth/logout" method="POST" className="ml-3">
               <button
                 type="submit"
                 className="text-sm border border-[var(--color-background)] px-4 py-2 hover:bg-[var(--color-background)] hover:text-[var(--color-foreground)] transition-colors"
