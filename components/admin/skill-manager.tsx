@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import type { SingleResponse } from "@/lib/response";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -33,6 +33,11 @@ export function SkillManager({ title, endpoint }: Props) {
   const [renameError, setRenameError] = useState<string | null>(null);
   const [renaming, setRenaming] = useState(false);
 
+  // Search
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Delete confirm
   const [deletingItem, setDeletingItem] = useState<Item | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
@@ -53,6 +58,16 @@ export function SkillManager({ title, endpoint }: Props) {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearchQuery(searchInput), 500);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [searchInput]);
+
+  const filteredItems = searchQuery
+    ? items.filter((it) => it.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : items;
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +167,17 @@ export function SkillManager({ title, endpoint }: Props) {
           </p>
         )}
 
+        {/* Search */}
+        <div className="mb-2">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder={`Search ${title.toLowerCase()}…`}
+            className="w-full border border-[var(--color-border-light)] px-4 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none placeholder:text-[var(--color-muted)]"
+          />
+        </div>
+
         {/* List */}
         {loading ? (
           <div className="border border-[var(--color-border-light)] divide-y divide-[var(--color-border-light)]">
@@ -176,7 +202,11 @@ export function SkillManager({ title, endpoint }: Props) {
           </div>
         ) : (
           <div className="border border-[var(--color-border-light)] divide-y divide-[var(--color-border-light)]">
-            {items.map((item) =>
+            {filteredItems.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-[var(--color-muted)]">
+                No {title.toLowerCase()} match &ldquo;{searchQuery}&rdquo;
+              </div>
+            ) : filteredItems.map((item, idx) =>
               renamingId === item.id ? (
                 <div
                   key={item.id}
@@ -221,7 +251,10 @@ export function SkillManager({ title, endpoint }: Props) {
                   key={item.id}
                   className="flex items-center justify-between px-5 py-3 hover:bg-[var(--color-muted-bg)] transition-colors"
                 >
-                  <span className="text-sm">{item.name}</span>
+                  <div className="flex items-center gap-4">
+                    <span className="text-xs font-mono text-[var(--color-muted)] w-6 text-right shrink-0">{idx + 1}</span>
+                    <span className="text-sm">{item.name}</span>
+                  </div>
                   <div className="flex gap-0 border border-[var(--color-border-light)]">
                     <button
                       type="button"
@@ -245,7 +278,7 @@ export function SkillManager({ title, endpoint }: Props) {
         )}
 
         <p className="mt-3 text-xs font-mono text-[var(--color-muted)]">
-          {items.length} {title.toLowerCase()}
+          {searchQuery ? `${filteredItems.length} of ` : ""}{items.length} {title.toLowerCase()}
         </p>
       </div>
 

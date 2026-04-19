@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import type { SingleResponse } from "@/lib/response";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -25,6 +25,11 @@ export function AdminsManager() {
   const [newPassword, setNewPassword] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+
+  // ── Search ──────────────────────────────────────────────
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Delete ───────────────────────────────────────────────────
   const [deletingAdmin, setDeletingAdmin] = useState<AdminAccount | null>(null);
@@ -59,6 +64,20 @@ export function AdminsManager() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setSearchQuery(searchInput), 500);
+    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+  }, [searchInput]);
+
+  const filteredAdmins = searchQuery
+    ? admins.filter(
+        (a) =>
+          a.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          a.email.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : admins;
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -230,6 +249,20 @@ export function AdminsManager() {
         )}
 
         {/* List */}
+        {/* Search */}
+        {!loading && !error && (
+          <div className="mb-3">
+            <input
+              type="search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="Search by username or email…"
+              className="w-full border border-[var(--color-border-light)] px-4 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none placeholder:text-[var(--color-muted)]"
+            />
+          </div>
+        )}
+
+        {/* List */}
         {loading ? (
           <div className="border border-[var(--color-border-light)] divide-y divide-[var(--color-border-light)]">
             {[1, 2].map((i) => (
@@ -251,7 +284,7 @@ export function AdminsManager() {
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-[var(--color-foreground)] text-[var(--color-background)]">
-                  {["Username", "Email", "Last Login", "Created", "Actions"].map(
+                  {["#", "Username", "Email", "Last Login", "Created", "Actions"].map(
                     (h) => (
                       <th
                         key={h}
@@ -264,11 +297,18 @@ export function AdminsManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-light)]">
-                {admins.map((admin) => (
+                {filteredAdmins.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-8 text-center text-sm text-[var(--color-muted)]">
+                      No admins match &ldquo;{searchQuery}&rdquo;
+                    </td>
+                  </tr>
+                ) : filteredAdmins.map((admin, idx) => (
                   <tr
                     key={admin.id}
                     className="hover:bg-[var(--color-muted-bg)] transition-colors"
                   >
+                    <td className="px-5 py-3 font-mono text-xs text-[var(--color-muted)] text-center border-r border-[var(--color-border-light)] w-10">{idx + 1}</td>
                     <td className="px-5 py-3 font-medium border-r border-[var(--color-border-light)]">
                       {admin.username}
                     </td>

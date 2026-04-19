@@ -6,8 +6,8 @@ import { sessionOptions } from "@/lib/auth";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow unauthenticated access to the login page
-  if (pathname === "/admin/login") {
+  // Allow unauthenticated access to the login and reset-password pages
+  if (pathname === "/admin/login" || pathname === "/admin/reset-password") {
     return NextResponse.next();
   }
 

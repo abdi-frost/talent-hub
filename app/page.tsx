@@ -1,17 +1,50 @@
 import Link from "next/link";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/shared/logo";
+import { statsRepository } from "@/repositories";
 
-export default function HomePage() {
+export const revalidate = 300; // revalidate every 5 minutes
+
+export default async function HomePage() {
+  let stats: {
+    totalTalents: number;
+    uniqueSkills: number;
+    avgExperience: number;
+    topSkill: string | null;
+  } | null = null;
+
+  try {
+    stats = await statsRepository.getPublicStats();
+  } catch {
+    // silently degrade — page still renders
+  }
+
+  const statItems = [
+    {
+      label: "Approved Talents",
+      value: stats ? String(stats.totalTalents) : "—",
+    },
+    {
+      label: "Unique Skills",
+      value: stats ? String(stats.uniqueSkills) : "—",
+    },
+    {
+      label: "Avg. Experience",
+      value: stats ? `${stats.avgExperience} yr${stats.avgExperience !== 1 ? "s" : ""}` : "—",
+    },
+    {
+      label: "Top Skill",
+      value: stats?.topSkill ?? "—",
+    },
+  ];
+
   return (
     <main className="flex flex-1 flex-col">
       {/* ── Nav ──────────────────────────────────────── */}
       <header className="border-b-2 border-[var(--color-border)]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span className="font-display text-2xl tracking-widest">
-            {APP_NAME}
-          </span>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <Logo href="/" />
           <Link
-            href="/admin/login"
+            href="/admin"
             className="text-sm font-medium border border-[var(--color-border)] px-4 py-2 hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
           >
             Admin
@@ -21,12 +54,12 @@ export default function HomePage() {
 
       {/* ── Hero ─────────────────────────────────────── */}
       <section className="border-b-2 border-[var(--color-border)] py-24">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-end">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-end">
           <div>
             <p className="text-sm font-mono tracking-[0.2em] uppercase text-[var(--color-accent)] mb-4">
               Talent Management
             </p>
-            <h1 className="font-display text-7xl md:text-9xl leading-none">
+            <h1 className="font-display text-5xl sm:text-7xl md:text-9xl leading-none">
               Find.
               <br />
               Build.
@@ -49,27 +82,22 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Stats placeholder ────────────────────────── */}
+      {/* ── Stats ────────────────────────────────────── */}
       <section className="py-20 border-b border-[var(--color-border-light)]">
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <h2 className="font-display text-3xl mb-12 tracking-wide">
             Community at a Glance
           </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border border-[var(--color-border)]">
-            {[
-              { label: "Total Talents", value: "—" },
-              { label: "Unique Skills", value: "—" },
-              { label: "Avg. Experience", value: "—" },
-              { label: "Top Skill", value: "—" },
-            ].map((stat, i) => (
+          <div className="grid grid-cols-2 items-center-safe md:grid-cols-4 gap-0 border border-[var(--color-border)]">
+            {statItems.map((stat, i) => (
               <div
                 key={i}
-                className="p-8 border-r border-[var(--color-border)] last:border-r-0"
+                className="p-6 sm:p-8 border-b md:border-b-0 border-r border-[var(--color-border)] last:border-r-0 even:border-r-0 md:even:border-r"
               >
-                <p className="font-display text-5xl text-[var(--color-accent)]">
+                <p className="font-display text-4xl sm:text-5xl text-[var(--color-accent)] leading-none break-words">
                   {stat.value}
                 </p>
-                <p className="text-sm text-[var(--color-muted)] mt-2 uppercase tracking-widest">
+                <p className="text-xs sm:text-sm text-[var(--color-muted)] mt-2 uppercase tracking-widest">
                   {stat.label}
                 </p>
               </div>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/shared/logo";
 import { TalentSubmissionForm } from "@/components/submit/talent-submission-form";
 
 export const metadata: Metadata = {
@@ -13,13 +13,8 @@ export default function SubmitPage() {
     <main className="flex flex-1 flex-col">
       {/* ── Nav ──────────────────────────────────────── */}
       <header className="border-b-2 border-[var(--color-border)]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link
-            href="/"
-            className="font-display text-2xl tracking-widest hover:text-[var(--color-accent)] transition-colors"
-          >
-            {APP_NAME}
-          </Link>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <Logo href="/" />
           <Link
             href="/admin/login"
             className="text-sm font-medium border border-[var(--color-border)] px-4 py-2 hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
@@ -40,7 +35,7 @@ export default function SubmitPage() {
               {" / "}
               <span className="text-[var(--color-foreground)]">Submit</span>
             </p>
-            <h1 className="font-display text-7xl md:text-9xl leading-none">
+            <h1 className="font-display text-5xl sm:text-7xl md:text-9xl leading-none">
               Submit.
             </h1>
           </div>

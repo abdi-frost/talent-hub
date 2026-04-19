@@ -58,6 +58,14 @@ export const talentListQuerySchema = z.object({
   status: z.nativeEnum(TalentStatus).optional(),
   primarySkill: z.string().max(100).optional(),
   search: z.string().max(100).optional(),
+  /** Comma-separated skill names */
+  skills: z.string().max(500).optional(),
+  skillsMatch: z.enum(["all", "any"]).optional().default("any"),
+  sortBy: z
+    .enum(["createdAt", "yearsOfExperience", "fullName", "status"])
+    .optional()
+    .default("createdAt"),
+  sortDir: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 export type TalentListQuery = z.infer<typeof talentListQuerySchema>;
