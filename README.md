@@ -58,7 +58,7 @@ Key structure:
 ### 1) Install dependencies
 ```bash
 corepack enable
-corepack pnpm install
+pnpm install
 ```
 
 ### 2) Configure environment
@@ -73,14 +73,14 @@ ADMIN_PASSWORD=P@ssw0rd
 
 ### 3) Initialize database
 ```bash
-corepack pnpm db:generate
-corepack pnpm db:migrate
-corepack pnpm db:seed
+pnpm db:generate
+pnpm db:migrate
+pnpm db:seed
 ```
 
 ### 4) Run development server
 ```bash
-corepack pnpm dev
+pnpm dev
 ```
 
 Open `http://localhost:3000`.
@@ -88,13 +88,13 @@ Open `http://localhost:3000`.
 ## Useful Scripts
 
 ```bash
-corepack pnpm dev            # start dev server
-corepack pnpm build          # production build
-corepack pnpm lint           # lint
-corepack pnpm type-check     # TypeScript checks
-corepack pnpm test           # unit tests
-corepack pnpm test:coverage  # unit tests with coverage
-corepack pnpm test:e2e       # Playwright e2e tests
+pnpm dev            # start dev server
+pnpm build          # production build
+pnpm lint           # lint
+pnpm type-check     # TypeScript checks
+pnpm test           # unit tests
+pnpm test:coverage  # unit tests with coverage
+pnpm test:e2e       # Playwright e2e tests
 ```
 
 ## Design Notes
