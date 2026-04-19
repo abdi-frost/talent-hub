@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Talent Hub
 
-## Getting Started
+Talent Hub is a fullstack talent management app where:
+- **Public users** submit talent profiles and view aggregate stats
+- **Admins** securely log in and manage all talent records
 
-First, run the development server:
+Built with **Next.js 16 App Router**, **React 19**, **TypeScript**, **Prisma 7 + PostgreSQL**, **Zod 4**, and **iron-session**.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Screenshots
+
+### Public landing + stats
+![Talent Hub landing page](public/screenshots/landing.png)
+
+### Admin records dashboard
+![Talent Hub admin records](public/screenshots/records.png)
+
+## Core Features
+
+- Talent submission form with client/server validation
+- Public stats API and homepage insights (no PII exposure)
+- Admin authentication (session-based)
+- Admin dashboard CRUD for talent records
+- Soft-delete model + audit logging for admin actions
+- Typed API response builders and centralized route error handling
+
+## Architecture (high level)
+
+```text
+app/api/* route handlers
+  └─ validate input (Zod) + auth checks
+     └─ repositories/* (only layer that uses Prisma)
+        └─ lib/prisma.ts singleton
+           └─ PostgreSQL
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Key structure:
+- `app/` — App Router pages + API routes
+- `repositories/` — data-access layer (Prisma calls live here)
+- `lib/` — auth, error handling, response builders, validation schemas
+- `components/` + `hooks/` — UI and client logic
+- `prisma/` — schema + seed scripts
+- `tests/` — unit + E2E tests
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Next.js 16 (App Router, Turbopack)
+- React 19 + TypeScript 5 (strict)
+- Tailwind CSS v4
+- Prisma 7 + PostgreSQL (`pg`)
+- Zod 4
+- iron-session 8
+- bcryptjs 3
+- Vitest + React Testing Library
+- Playwright
 
-## Learn More
+## Local Setup
 
-To learn more about Next.js, take a look at the following resources:
+### 1) Install dependencies
+```bash
+corepack enable
+corepack pnpm install
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 2) Configure environment
+Create `.env` in the project root:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME
+SESSION_SECRET=your-32+char-random-secret
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=P@ssw0rd
+```
 
-## Deploy on Vercel
+### 3) Initialize database
+```bash
+corepack pnpm db:generate
+corepack pnpm db:migrate
+corepack pnpm db:seed
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4) Run development server
+```bash
+corepack pnpm dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Open `http://localhost:3000`.
+
+## Useful Scripts
+
+```bash
+corepack pnpm dev            # start dev server
+corepack pnpm build          # production build
+corepack pnpm lint           # lint
+corepack pnpm type-check     # TypeScript checks
+corepack pnpm test           # unit tests
+corepack pnpm test:coverage  # unit tests with coverage
+corepack pnpm test:e2e       # Playwright e2e tests
+```
+
+## Design Notes
+
+- Sharp rectangular UI (zero border radius)
+- No shadows; borders define structure
+- 8px spacing rhythm
+- High-contrast palette with vermillion accent
