@@ -4,6 +4,10 @@ Talent Hub is a fullstack talent management app where:
 - **Public users** submit talent profiles and view aggregate stats
 - **Admins** securely log in and manage all talent records
 
+## Admin Credentials
+username: `TalentHubAdmin`
+password: `P@ssw0rd`
+
 Built with **Next.js 16 App Router**, **React 19**, **TypeScript**, **Prisma 7 + PostgreSQL**, **Zod 4**, and **iron-session**.
 
 ## Screenshots
