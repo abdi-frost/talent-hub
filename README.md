@@ -1,7 +1,8 @@
 # Talent Hub
 
 https://https://talent-hub-blue.vercel.app/
-Talent Hub is a fullstack talent management app where:
+
+## Talent Hub is a fullstack talent management app where:
 - **Public users** submit talent profiles and view aggregate stats
 - **Admins** securely log in and manage all talent records
 
