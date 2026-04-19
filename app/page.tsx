@@ -41,7 +41,7 @@ export default async function HomePage() {
     <main className="flex flex-1 flex-col">
       {/* ── Nav ──────────────────────────────────────── */}
       <header className="border-b-2 border-[var(--color-border)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Logo href="/" />
           <Link
             href="/admin"
@@ -54,7 +54,7 @@ export default async function HomePage() {
 
       {/* ── Hero ─────────────────────────────────────── */}
       <section className="border-b-2 border-[var(--color-border)] py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-end">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-16 items-end">
           <div>
             <p className="text-sm font-mono tracking-[0.2em] uppercase text-[var(--color-accent)] mb-4">
               Talent Management
@@ -84,7 +84,7 @@ export default async function HomePage() {
 
       {/* ── Stats ────────────────────────────────────── */}
       <section className="py-20 border-b border-[var(--color-border-light)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <h2 className="font-display text-3xl mb-12 tracking-wide">
             Community at a Glance
           </h2>

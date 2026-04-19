@@ -7,6 +7,7 @@ import { AppError } from "./errors";
 export interface SessionData {
   adminId?: string;
   isLoggedIn?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export const sessionOptions = {
@@ -48,6 +49,34 @@ export async function getAuthenticatedAdminOrThrow(): Promise<
   const session = await getSession();
   if (!session.isLoggedIn) {
     throw AppError.unauthorized();
+  }
+  return session;
+}
+
+/**
+ * For Server Components / Pages — redirects to login if not authenticated as superAdmin.
+ */
+export async function requireSuperAdmin(): Promise<IronSession<SessionData>> {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    redirect("/admin/login");
+  }
+  if (!session.isSuperAdmin) {
+    redirect("/admin/dashboard");
+  }
+  return session;
+}
+
+/**
+ * For API Route Handlers — throws 403 if the caller is not a super-admin.
+ */
+export async function getSuperAdminOrThrow(): Promise<IronSession<SessionData>> {
+  const session = await getSession();
+  if (!session.isLoggedIn) {
+    throw AppError.unauthorized();
+  }
+  if (!session.isSuperAdmin) {
+    throw AppError.forbidden("Super-admin access required");
   }
   return session;
 }

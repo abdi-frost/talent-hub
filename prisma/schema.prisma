@@ -41,8 +41,10 @@ model Admin {
     username               String    @unique
     email                  String    @unique
     password               String
+    /// Super-admins cannot be deleted and are the only ones who can manage the team page
+    isSuperAdmin           Boolean   @default(false)
     lastLoginAt            DateTime?
-    /// Token for password-reset flow; cleared after use
+    /// Token for password-reset / invite flow; cleared after use
     passwordResetToken     String?   @unique
     passwordResetExpiresAt DateTime?
     createdAt              DateTime  @default(now())

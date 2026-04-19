@@ -80,17 +80,21 @@ export type SkillNameInput = z.infer<typeof skillNameSchema>;
 
 // ── Admin account management ──────────────────────────────────────
 
-export const createAdminSchema = z.object({
+/** Used when inviting a new admin — no password needed; they set it via email invite. */
+export const inviteAdminSchema = z.object({
   username: z
     .string()
     .min(3, "Username must be at least 3 characters")
     .max(50)
     .regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, _ and -"),
   email: z.email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
-export type CreateAdminInput = z.infer<typeof createAdminSchema>;
+export type InviteAdminInput = z.infer<typeof inviteAdminSchema>;
+
+/** @deprecated use inviteAdminSchema — kept for backward compat */
+export const createAdminSchema = inviteAdminSchema;
+export type CreateAdminInput = InviteAdminInput;
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Current password is required"),

@@ -5,17 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/shared/logo";
 
-const NAV_LINKS = [
+const BASE_NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/admin/dashboard", label: "Talents" },
   { href: "/admin/skills", label: "Skills" },
   { href: "/admin/primary-skills", label: "Categories" },
-  { href: "/admin/admins", label: "Admins" },
 ] as const;
 
-export function AdminNav() {
+const SUPER_ADMIN_LINK = { href: "/admin/team", label: "Team" } as const;
+
+interface AdminNavProps {
+  isSuperAdmin?: boolean;
+}
+
+export function AdminNav({ isSuperAdmin = false }: AdminNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
+
+  const navLinks = isSuperAdmin ? [...BASE_NAV_LINKS, SUPER_ADMIN_LINK] : BASE_NAV_LINKS;
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -28,7 +35,7 @@ export function AdminNav() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map(({ href, label }) => (
+          {navLinks.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
@@ -81,7 +88,7 @@ export function AdminNav() {
       {menuOpen && (
         <div className="md:hidden border-t border-[var(--color-background)]/20 bg-[var(--color-foreground)]">
           <nav className="flex flex-col divide-y divide-[var(--color-background)]/10">
-            {NAV_LINKS.map(({ href, label }) => (
+            {navLinks.map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}

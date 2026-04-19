@@ -9,8 +9,24 @@ interface AdminAccount {
   id: string;
   username: string;
   email: string;
+  isSuperAdmin: boolean;
   lastLoginAt?: string | null;
   createdAt: string;
+}
+
+// ── Shared field style ────────────────────────────────────────────
+const FIELD =
+  "w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50";
+const LABEL =
+  "block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5";
+
+// ── StatusPill ────────────────────────────────────────────────────
+function SuperBadge() {
+  return (
+    <span className="inline-block text-[10px] font-mono uppercase tracking-widest border border-[var(--color-accent)] text-[var(--color-accent)] px-1.5 py-0.5 leading-none">
+      Super
+    </span>
+  );
 }
 
 export function AdminsManager() {
@@ -18,31 +34,27 @@ export function AdminsManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ── Create ───────────────────────────────────────────────────
-  const [showCreate, setShowCreate] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
-  const [newEmail, setNewEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [createError, setCreateError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  // ── Invite form ───────────────────────────────────────────────
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteUsername, setInviteUsername] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState<string | null>(null);
+  const [inviting, setInviting] = useState(false);
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null);
 
-  // ── Search ──────────────────────────────────────────────
+  // ── Search ────────────────────────────────────────────────────
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Delete ───────────────────────────────────────────────────
+  // ── Delete ────────────────────────────────────────────────────
   const [deletingAdmin, setDeletingAdmin] = useState<AdminAccount | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  // ── Password reset ───────────────────────────────────────────
-  const [pwAdmin, setPwAdmin] = useState<AdminAccount | null>(null);
-  const [currentPw, setCurrentPw] = useState("");
-  const [newPw, setNewPw] = useState("");
-  const [pwError, setPwError] = useState<string | null>(null);
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwSuccess, setPwSuccess] = useState(false);
+  // ── Send reset link ───────────────────────────────────────────
+  const [sendingResetFor, setSendingResetFor] = useState<string | null>(null);
+  const [resetSent, setResetSent] = useState<Record<string, boolean>>({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -54,7 +66,7 @@ export function AdminsManager() {
       setAdmins(res.data);
     } catch (err) {
       setError(
-        err instanceof ApiClientError ? err.message : "Failed to load admins.",
+        err instanceof ApiClientError ? err.message : "Failed to load team.",
       );
     } finally {
       setLoading(false);
@@ -66,12 +78,14 @@ export function AdminsManager() {
   }, [load]);
 
   useEffect(() => {
-    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
-    searchDebounceRef.current = setTimeout(() => setSearchQuery(searchInput), 500);
-    return () => { if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current); };
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setSearchQuery(searchInput), 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [searchInput]);
 
-  const filteredAdmins = searchQuery
+  const filtered = searchQuery
     ? admins.filter(
         (a) =>
           a.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,37 +93,58 @@ export function AdminsManager() {
       )
     : admins;
 
-  const handleCreate = async (e: React.FormEvent) => {
+  // ── Invite ────────────────────────────────────────────────────
+  const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    setCreateError(null);
-    if (!newUsername.trim() || !newEmail.trim() || !newPassword) {
-      setCreateError("All fields are required.");
+    setInviteError(null);
+    setInviteSuccess(null);
+    if (!inviteUsername.trim() || !inviteEmail.trim()) {
+      setInviteError("Username and email are required.");
       return;
     }
-    setCreating(true);
+    setInviting(true);
     try {
       const res = await apiClient.post<SingleResponse<AdminAccount>>(
         "/api/admin/admins",
-        {
-          username: newUsername.trim(),
-          email: newEmail.trim(),
-          password: newPassword,
-        },
+        { username: inviteUsername.trim(), email: inviteEmail.trim() },
       );
       setAdmins((prev) => [...prev, res.data as unknown as AdminAccount]);
-      setNewUsername("");
-      setNewEmail("");
-      setNewPassword("");
-      setShowCreate(false);
+      setInviteUsername("");
+      setInviteEmail("");
+      setInviteSuccess(
+        `Invite sent to ${inviteEmail.trim()}. They can set their password via the link in the email.`,
+      );
+      setTimeout(() => {
+        setShowInvite(false);
+        setInviteSuccess(null);
+      }, 4000);
     } catch (err) {
-      setCreateError(
-        err instanceof ApiClientError ? err.message : "Failed to create admin.",
+      setInviteError(
+        err instanceof ApiClientError ? err.message : "Failed to send invite.",
       );
     } finally {
-      setCreating(false);
+      setInviting(false);
     }
   };
 
+  // ── Send reset link ───────────────────────────────────────────
+  const handleSendReset = async (admin: AdminAccount) => {
+    setSendingResetFor(admin.id);
+    try {
+      await apiClient.post("/api/auth/forgot-password", { email: admin.email });
+      setResetSent((prev) => ({ ...prev, [admin.id]: true }));
+      setTimeout(
+        () => setResetSent((prev) => ({ ...prev, [admin.id]: false })),
+        5000,
+      );
+    } catch {
+      // forgot-password always returns 200 — errors are silent
+    } finally {
+      setSendingResetFor(null);
+    }
+  };
+
+  // ── Delete ────────────────────────────────────────────────────
   const handleDelete = async () => {
     if (!deletingAdmin) return;
     setDeleteLoading(true);
@@ -127,37 +162,6 @@ export function AdminsManager() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pwAdmin) return;
-    setPwError(null);
-    setPwSuccess(false);
-    if (!currentPw || !newPw) {
-      setPwError("Both fields are required.");
-      return;
-    }
-    if (newPw.length < 8) {
-      setPwError("New password must be at least 8 characters.");
-      return;
-    }
-    setPwSaving(true);
-    try {
-      await apiClient.put(`/api/admin/admins/${pwAdmin.id}`, {
-        currentPassword: currentPw,
-        newPassword: newPw,
-      });
-      setPwSuccess(true);
-      setCurrentPw("");
-      setNewPw("");
-    } catch (err) {
-      setPwError(
-        err instanceof ApiClientError ? err.message : "Failed to change password.",
-      );
-    } finally {
-      setPwSaving(false);
-    }
-  };
-
   const formatDate = (iso?: string | null) =>
     iso
       ? new Date(iso).toLocaleDateString("en-GB", {
@@ -167,127 +171,176 @@ export function AdminsManager() {
         })
       : "—";
 
-  // ── Render ──────────────────────────────────────────────────
-
+  // ── Render ────────────────────────────────────────────────────
   return (
     <>
-      <div className="max-w-2xl">
-        {/* Header + Add button */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-muted)]">
-            {admins.length} account{admins.length !== 1 ? "s" : ""}
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowCreate((s) => !s)}
-            className="text-sm font-medium border border-[var(--color-border)] px-5 py-2 hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
-          >
-            {showCreate ? "✕ Cancel" : "+ Add Admin"}
-          </button>
-        </div>
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-muted)]">
+          {admins.length} account{admins.length !== 1 ? "s" : ""}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setShowInvite((s) => !s);
+            setInviteError(null);
+            setInviteSuccess(null);
+          }}
+          className="self-start sm:self-auto text-sm font-medium border border-[var(--color-border)] px-5 py-2.5 hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
+        >
+          {showInvite ? "✕ Cancel" : "+ Invite Admin"}
+        </button>
+      </div>
 
-        {/* Create form */}
-        {showCreate && (
-          <form
-            onSubmit={handleCreate}
-            className="border border-[var(--color-border)] p-6 mb-6 space-y-4"
-          >
-            <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-2">
-              New Admin Account
-            </p>
-            {createError && (
-              <p className="text-xs font-mono text-[var(--color-accent)]">
-                {createError}
-              </p>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5">
-                  Username *
-                </label>
-                <input
-                  type="text"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  disabled={creating}
-                  className="w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  disabled={creating}
-                  className="w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50"
-                />
-              </div>
-            </div>
+      {/* ── Invite form ── */}
+      {showInvite && (
+        <form
+          onSubmit={handleInvite}
+          className="border-2 border-[var(--color-border)] p-6 mb-8 space-y-4"
+        >
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <label className="block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5">
-                Password * (min 8 chars)
-              </label>
+              <p className="font-display text-2xl">Invite Admin</p>
+              <p className="text-xs text-[var(--color-muted)] mt-0.5">
+                An email with a password-setup link will be sent to the address
+                below.
+              </p>
+            </div>
+          </div>
+
+          {inviteError && (
+            <p className="text-xs font-mono text-[var(--color-accent)] border border-[var(--color-accent)] px-3 py-2">
+              {inviteError}
+            </p>
+          )}
+
+          {inviteSuccess && (
+            <p className="text-xs font-mono text-green-700 border border-green-600 px-3 py-2 bg-green-50">
+              ✓ {inviteSuccess}
+            </p>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={LABEL}>Username *</label>
               <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={creating}
-                className="w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50"
+                type="text"
+                autoComplete="off"
+                value={inviteUsername}
+                onChange={(e) => setInviteUsername(e.target.value)}
+                disabled={inviting}
+                placeholder="e.g. jane_admin"
+                className={FIELD}
               />
             </div>
+            <div>
+              <label className={LABEL}>Email Address *</label>
+              <input
+                type="email"
+                autoComplete="off"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                disabled={inviting}
+                placeholder="jane@example.com"
+                className={FIELD}
+              />
+            </div>
+          </div>
+
+          <div className="pt-1">
             <button
               type="submit"
-              disabled={creating}
-              className="bg-[var(--color-foreground)] text-[var(--color-background)] px-8 py-3 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+              disabled={inviting}
+              className="bg-[var(--color-foreground)] text-[var(--color-background)] px-8 py-3 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-40"
             >
-              {creating ? "Creating…" : "Create Admin →"}
+              {inviting ? "Sending invite…" : "Send Invite →"}
             </button>
-          </form>
-        )}
-
-        {/* List */}
-        {/* Search */}
-        {!loading && !error && (
-          <div className="mb-3">
-            <input
-              type="search"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search by username or email…"
-              className="w-full border border-[var(--color-border-light)] px-4 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none placeholder:text-[var(--color-muted)]"
-            />
           </div>
-        )}
+        </form>
+      )}
 
-        {/* List */}
-        {loading ? (
-          <div className="border border-[var(--color-border-light)] divide-y divide-[var(--color-border-light)]">
-            {[1, 2].map((i) => (
-              <div key={i} className="px-6 py-4 animate-pulse flex gap-4">
-                <div className="h-4 bg-[var(--color-muted-bg)] w-32" />
-                <div className="h-4 bg-[var(--color-muted-bg)] w-48" />
+      {/* ── Search ── */}
+      {!loading && !error && admins.length > 0 && (
+        <div className="mb-4">
+          <input
+            type="search"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Search by username or email…"
+            className="w-full sm:max-w-sm border border-[var(--color-border-light)] px-4 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors placeholder:text-[var(--color-muted)]"
+          />
+        </div>
+      )}
+
+      {/* ── List ── */}
+      {loading ? (
+        <div className="border border-[var(--color-border-light)] divide-y divide-[var(--color-border-light)]">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="px-6 py-5 animate-pulse flex gap-4 items-center">
+              <div className="h-4 bg-[var(--color-muted-bg)] w-28 rounded-none" />
+              <div className="h-4 bg-[var(--color-muted-bg)] w-44 rounded-none" />
+              <div className="h-4 bg-[var(--color-muted-bg)] w-20 rounded-none ml-auto" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="border border-[var(--color-accent)] px-6 py-4">
+          <p className="text-sm font-mono text-[var(--color-accent)]">{error}</p>
+          <button onClick={load} className="mt-1 text-xs underline">
+            Retry
+          </button>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="border border-[var(--color-border-light)] px-6 py-10 text-center">
+          <p className="text-sm text-[var(--color-muted)]">
+            {searchQuery ? `No admins match "${searchQuery}"` : "No admins yet."}
+          </p>
+        </div>
+      ) : (
+        /* ── Desktop table / Mobile cards ── */
+        <>
+          {/* Mobile cards — shown below sm */}
+          <div className="sm:hidden space-y-px border border-[var(--color-border-light)]">
+            {filtered.map((admin) => (
+              <div
+                key={admin.id}
+                className="px-4 py-4 bg-[var(--color-background)] border-b border-[var(--color-border-light)] last:border-b-0"
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium text-sm truncate">
+                      {admin.username}
+                    </span>
+                    {admin.isSuperAdmin && <SuperBadge />}
+                  </div>
+                  <RowActions
+                    admin={admin}
+                    sendingResetFor={sendingResetFor}
+                    resetSent={resetSent}
+                    onSendReset={handleSendReset}
+                    onDelete={setDeletingAdmin}
+                  />
+                </div>
+                <p className="text-xs font-mono text-[var(--color-muted)] truncate">
+                  {admin.email}
+                </p>
+                <p className="text-xs text-[var(--color-muted)] mt-1">
+                  Last login: {formatDate(admin.lastLoginAt)} · Joined:{" "}
+                  {formatDate(admin.createdAt)}
+                </p>
               </div>
             ))}
           </div>
-        ) : error ? (
-          <div className="border border-[var(--color-accent)] px-6 py-4">
-            <p className="text-sm font-mono text-[var(--color-accent)]">{error}</p>
-            <button onClick={load} className="mt-1 text-xs underline">
-              Retry
-            </button>
-          </div>
-        ) : (
-          <div className="border border-[var(--color-border-light)]">
-            <table className="w-full text-sm border-collapse">
+
+          {/* Desktop table — shown from sm up */}
+          <div className="hidden sm:block border border-[var(--color-border-light)] overflow-x-auto">
+            <table className="w-full text-sm border-collapse min-w-[640px]">
               <thead>
                 <tr className="bg-[var(--color-foreground)] text-[var(--color-background)]">
-                  {["#", "Username", "Email", "Last Login", "Created", "Actions"].map(
-                    (h) => (
+                  {["#", "Username", "Email", "Last Login", "Joined", ""].map(
+                    (h, i) => (
                       <th
-                        key={h}
+                        key={i}
                         className="text-left px-5 py-3 text-xs font-mono uppercase tracking-widest border-r border-[var(--color-background)]/20 last:border-r-0 whitespace-nowrap"
                       >
                         {h}
@@ -297,72 +350,61 @@ export function AdminsManager() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border-light)]">
-                {filteredAdmins.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-5 py-8 text-center text-sm text-[var(--color-muted)]">
-                      No admins match &ldquo;{searchQuery}&rdquo;
-                    </td>
-                  </tr>
-                ) : filteredAdmins.map((admin, idx) => (
+                {filtered.map((admin, idx) => (
                   <tr
                     key={admin.id}
                     className="hover:bg-[var(--color-muted-bg)] transition-colors"
                   >
-                    <td className="px-5 py-3 font-mono text-xs text-[var(--color-muted)] text-center border-r border-[var(--color-border-light)] w-10">{idx + 1}</td>
-                    <td className="px-5 py-3 font-medium border-r border-[var(--color-border-light)]">
-                      {admin.username}
+                    <td className="px-5 py-3.5 font-mono text-xs text-[var(--color-muted)] text-center border-r border-[var(--color-border-light)] w-10">
+                      {idx + 1}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)]">
+                    <td className="px-5 py-3.5 border-r border-[var(--color-border-light)]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{admin.username}</span>
+                        {admin.isSuperAdmin && <SuperBadge />}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)]">
                       {admin.email}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)]">
+                    <td className="px-5 py-3.5 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)] whitespace-nowrap">
                       {formatDate(admin.lastLoginAt)}
                     </td>
-                    <td className="px-5 py-3 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)]">
+                    <td className="px-5 py-3.5 font-mono text-xs text-[var(--color-muted)] border-r border-[var(--color-border-light)] whitespace-nowrap">
                       {formatDate(admin.createdAt)}
                     </td>
-                    <td className="px-5 py-3">
-                      <div className="flex gap-0 border border-[var(--color-border-light)] w-fit">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPwAdmin(admin);
-                            setPwError(null);
-                            setPwSuccess(false);
-                            setCurrentPw("");
-                            setNewPw("");
-                          }}
-                          className="px-3 py-1.5 text-xs font-mono border-r border-[var(--color-border-light)] hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
-                        >
-                          Reset PW
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setDeletingAdmin(admin)}
-                          className="px-3 py-1.5 text-xs font-mono hover:bg-[var(--color-accent)] hover:text-white transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                    <td className="px-4 py-3.5">
+                      <RowActions
+                        admin={admin}
+                        sendingResetFor={sendingResetFor}
+                        resetSent={resetSent}
+                        onSendReset={handleSendReset}
+                        onDelete={setDeletingAdmin}
+                      />
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </>
+      )}
 
-      {/* Delete confirm */}
+      {/* ── Delete confirm ── */}
+      {deleteError && (
+        <p className="mt-3 text-xs font-mono text-[var(--color-accent)]">
+          {deleteError}
+        </p>
+      )}
       <ConfirmDialog
         open={!!deletingAdmin}
-        title="Delete Admin"
+        title="Remove Admin"
         message={
           deletingAdmin
-            ? `Delete the admin account "${deletingAdmin.username}"? This cannot be undone.`
+            ? `Remove "${deletingAdmin.username}" from the team? They will lose all admin access immediately.`
             : ""
         }
-        confirmLabel="Delete"
+        confirmLabel="Remove"
         danger
         loading={deleteLoading}
         onConfirm={handleDelete}
@@ -371,92 +413,53 @@ export function AdminsManager() {
           setDeleteError(null);
         }}
       />
-
-      {/* Password reset overlay */}
-      {pwAdmin && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div
-            className="fixed inset-0 bg-[var(--color-foreground)]/60"
-            onClick={() => setPwAdmin(null)}
-            aria-hidden
-          />
-          <div className="relative z-10 w-full max-w-sm border-2 border-[var(--color-border)] bg-[var(--color-background)] p-8">
-            <h2 className="font-display text-3xl mb-1">Reset Password</h2>
-            <p className="text-xs font-mono text-[var(--color-muted)] mb-6 uppercase tracking-widest">
-              {pwAdmin.username}
-            </p>
-
-            {pwSuccess ? (
-              <div className="text-center py-4">
-                <p className="font-mono text-3xl text-green-600 mb-3">✓</p>
-                <p className="text-sm text-[var(--color-muted)]">
-                  Password changed successfully.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setPwAdmin(null)}
-                  className="mt-4 text-sm underline"
-                >
-                  Close
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handlePasswordChange} noValidate className="space-y-4">
-                {pwError && (
-                  <p className="text-xs font-mono text-[var(--color-accent)]">
-                    {pwError}
-                  </p>
-                )}
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5">
-                    Current Password *
-                  </label>
-                  <input
-                    type="password"
-                    value={currentPw}
-                    onChange={(e) => setCurrentPw(e.target.value)}
-                    disabled={pwSaving}
-                    className="w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-1.5">
-                    New Password * (min 8 chars)
-                  </label>
-                  <input
-                    type="password"
-                    value={newPw}
-                    onChange={(e) => setNewPw(e.target.value)}
-                    disabled={pwSaving}
-                    className="w-full border border-[var(--color-border-light)] px-3 py-2.5 text-sm bg-[var(--color-background)] focus:outline-none focus:border-[var(--color-foreground)] transition-colors disabled:opacity-50"
-                  />
-                </div>
-                <div className="flex gap-0 border border-[var(--color-border)] pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setPwAdmin(null)}
-                    disabled={pwSaving}
-                    className="flex-1 py-3 text-sm font-medium border-r border-[var(--color-border)] hover:bg-[var(--color-muted-bg)] transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={pwSaving}
-                    className="flex-1 py-3 text-sm font-medium bg-[var(--color-foreground)] text-[var(--color-background)] hover:opacity-80 transition-opacity disabled:opacity-50"
-                  >
-                    {pwSaving ? "Saving…" : "Save"}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
     </>
   );
 }
+
+// ── RowActions sub-component ──────────────────────────────────────
+interface RowActionsProps {
+  admin: AdminAccount;
+  sendingResetFor: string | null;
+  resetSent: Record<string, boolean>;
+  onSendReset: (admin: AdminAccount) => void;
+  onDelete: (admin: AdminAccount) => void;
+}
+
+function RowActions({
+  admin,
+  sendingResetFor,
+  resetSent,
+  onSendReset,
+  onDelete,
+}: RowActionsProps) {
+  const sending = sendingResetFor === admin.id;
+  const sent = resetSent[admin.id];
+
+  return (
+    <div className="flex items-center gap-0 border border-[var(--color-border-light)] w-fit shrink-0">
+      {/* Send reset link */}
+      <button
+        type="button"
+        disabled={sending || sent}
+        onClick={() => onSendReset(admin)}
+        title="Send password-reset link to this admin's email"
+        className="px-3 py-1.5 text-xs font-mono border-r border-[var(--color-border-light)] hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors disabled:opacity-40 whitespace-nowrap"
+      >
+        {sent ? "✓ Sent" : sending ? "Sending…" : "Reset Link"}
+      </button>
+
+      {/* Delete — hidden for super-admins */}
+      {!admin.isSuperAdmin && (
+        <button
+          type="button"
+          onClick={() => onDelete(admin)}
+          title="Remove this admin"
+          className="px-3 py-1.5 text-xs font-mono hover:bg-[var(--color-accent)] hover:text-white transition-colors"
+        >
+          Remove
+        </button>
+      )}
+    </div>
+  );
+}

@@ -28,6 +28,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const session = await getSession();
   session.isLoggedIn = true;
   session.adminId = admin.id;
+  session.isSuperAdmin = admin.isSuperAdmin;
   await session.save();
 
   // Fire-and-forget: update last login timestamp

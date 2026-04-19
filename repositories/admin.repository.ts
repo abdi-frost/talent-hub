@@ -49,9 +49,18 @@ export const adminRepository = {
   async list() {
     try {
       return await prisma.admin.findMany({
-        select: { id: true, username: true, email: true, lastLoginAt: true, createdAt: true, updatedAt: true },
+        select: { id: true, username: true, email: true, isSuperAdmin: true, lastLoginAt: true, createdAt: true, updatedAt: true },
         orderBy: { createdAt: "asc" },
       });
+    } catch (err) {
+      throw handleDbError(err, "Admin");
+    }
+  },
+
+  /** Find an admin by email — used during invite / forgot-password flow. */
+  async findByEmail(email: string) {
+    try {
+      return await prisma.admin.findUnique({ where: { email } });
     } catch (err) {
       throw handleDbError(err, "Admin");
     }
@@ -62,7 +71,7 @@ export const adminRepository = {
     try {
       return await prisma.admin.create({
         data,
-        select: { id: true, username: true, email: true, createdAt: true },
+        select: { id: true, username: true, email: true, isSuperAdmin: true, createdAt: true },
       });
     } catch (err) {
       throw handleDbError(err, "Admin");
@@ -94,9 +103,13 @@ export const adminRepository = {
     }
   },
 
-  /** Delete an admin account. */
+  /** Delete an admin account. Throws 403 if the target is a super-admin. */
   async delete(id: string) {
     try {
+      const target = await prisma.admin.findUnique({ where: { id }, select: { isSuperAdmin: true } });
+      if (target?.isSuperAdmin) {
+        throw AppError.forbidden("Super-admin accounts cannot be deleted");
+      }
       return await prisma.admin.delete({ where: { id } });
     } catch (err) {
       throw handleDbError(err, "Admin");
