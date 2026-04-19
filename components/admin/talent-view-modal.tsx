@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiClient, ApiClientError } from "@/lib/api-client";
 import { TalentStatus } from "@/lib/constants";
 import type { SingleResponse } from "@/lib/response";
+import { StatusBadge } from "./ui/status-badge";
 
 // ── Types ─────────────────────────────────────────────────────────
 
@@ -26,35 +27,32 @@ interface Props {
   talent: TalentRecord;
   onClose: () => void;
   onStatusChanged: (updated: TalentRecord) => void;
-}
-
-// ── Status badge ──────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    PENDING: "border-[var(--color-muted)] text-[var(--color-muted)]",
-    REVIEWED: "border-blue-500 text-blue-500",
-    APPROVED: "border-green-600 text-green-600",
-    REJECTED: "border-[var(--color-accent)] text-[var(--color-accent)]",
-  };
-  return (
-    <span
-      className={`inline-block border px-2 py-0.5 text-xs font-mono uppercase tracking-widest ${
-        map[status] ?? "border-[var(--color-border-light)] text-[var(--color-muted)]"
-      }`}
-    >
-      {status}
-    </span>
-  );
+  onDeleted: (id: string) => void;
 }
 
 // ── Modal ─────────────────────────────────────────────────────────
 
-export function TalentViewModal({ talent, onClose, onStatusChanged }: Props) {
+export function TalentViewModal({ talent, onClose, onStatusChanged, onDeleted }: Props) {
   const [status, setStatus] = useState(talent.status);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    setError(null);
+    try {
+      await apiClient.delete(`/api/admin/talents/${talent.id}`);
+      onDeleted(talent.id);
+      onClose();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Failed to delete.");
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const isDirty = status !== talent.status;
 
@@ -247,23 +245,56 @@ export function TalentViewModal({ talent, onClose, onStatusChanged }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 px-8 py-5 border-t border-[var(--color-border-light)] flex gap-0 border border-[var(--color-border)]">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 py-3 text-sm font-medium border-r border-[var(--color-border)] hover:bg-[var(--color-muted-bg)] transition-colors"
-          >
-            Close
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving || !isDirty}
-            className="flex-1 py-3 text-sm font-medium bg-[var(--color-foreground)] text-[var(--color-background)] hover:opacity-80 transition-opacity disabled:opacity-40"
-          >
-            {saving ? "Saving…" : "Save Status →"}
-          </button>
-        </div>
+        {confirmDelete ? (
+          <div className="shrink-0 px-8 py-5 border-t-2 border-[var(--color-accent)] bg-[var(--color-accent)]/5">
+            <p className="text-sm font-mono text-[var(--color-accent)] mb-4">
+              Delete <strong>{talent.fullName}</strong>? This cannot be undone.
+            </p>
+            <div className="flex gap-0 border border-[var(--color-border)]">
+              <button
+                type="button"
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 py-3 text-sm font-medium border-r border-[var(--color-border)] hover:bg-[var(--color-muted-bg)] transition-colors disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 py-3 text-sm font-medium bg-[var(--color-accent)] text-white hover:opacity-80 transition-opacity disabled:opacity-40"
+              >
+                {deleting ? "Deleting…" : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="shrink-0 px-8 py-5 border-t border-[var(--color-border-light)] flex gap-0 border border-[var(--color-border)]">
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="px-5 py-3 text-sm font-medium text-[var(--color-accent)] border-r border-[var(--color-border)] hover:bg-[var(--color-accent)]/5 transition-colors"
+            >
+              Delete
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 text-sm font-medium border-r border-[var(--color-border)] hover:bg-[var(--color-muted-bg)] transition-colors"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || !isDirty}
+              className="flex-1 py-3 text-sm font-medium bg-[var(--color-foreground)] text-[var(--color-background)] hover:opacity-80 transition-opacity disabled:opacity-40"
+            >
+              {saving ? "Saving…" : "Save Status →"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

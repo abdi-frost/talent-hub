@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { apiClient, ApiClientError } from "@/lib/api-client";
-import { APP_NAME } from "@/lib/constants";
+import { Logo } from "@/components/shared/logo";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -58,11 +58,13 @@ export function ResetPasswordForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)]">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] px-4">
       <div className="w-full max-w-md">
-        <div className="p-10">
-          <h1 className="font-display text-4xl mb-1">{APP_NAME}</h1>
-          <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-10">
+        <div className="flex justify-center mb-8">
+          <Logo href="/admin" width={160} variant="light" />
+        </div>
+        <div className="border border-[var(--color-border)] p-8 sm:p-10">
+          <p className="text-xs font-mono uppercase tracking-widest text-[var(--color-muted)] mb-8">
             Set New Password
           </p>
 
