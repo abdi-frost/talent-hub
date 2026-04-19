@@ -5,6 +5,7 @@
   "scripts": {
     "predev": "pnpm db:generate && pnpm db:migrate",
     "dev": "next dev",
+    "prebuild": "pnpm db:generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
