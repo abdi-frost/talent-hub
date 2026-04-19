@@ -11,7 +11,7 @@ export default function HomePage() {
             {APP_NAME}
           </span>
           <Link
-            href="/admin/login"
+            href="/admin"
             className="text-sm font-medium border border-[var(--color-border)] px-4 py-2 hover:bg-[var(--color-foreground)] hover:text-[var(--color-background)] transition-colors"
           >
             Admin

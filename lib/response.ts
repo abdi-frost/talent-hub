@@ -26,10 +26,10 @@ export type PaginationMeta = {
   hasPrev: boolean;
 };
 
-export type PaginatedResponse<T> = {
+export type PaginatedResponse<T, E = undefined> = {
   data: T[];
   pagination: PaginationMeta;
-};
+} & (E extends undefined ? object : { extra: E });
 
 export type SuccessResponse = {
   success: true;
@@ -55,12 +55,13 @@ export function single<T>(
   return NextResponse.json({ data }, { status });
 }
 
-/** Wrap a paginated list. Computes totalPages, hasNext, hasPrev. */
-export function paginated<T>(
+/** Wrap a paginated list. Computes totalPages, hasNext, hasPrev. Accepts optional extra data. */
+export function paginated<T, E = undefined>(
   data: T[],
   meta: { page: number; pageSize: number; total: number },
   status = 200,
-): NextResponse<PaginatedResponse<T>> {
+  extra?: E,
+): NextResponse<PaginatedResponse<T, E>> {
   const totalPages = Math.max(1, Math.ceil(meta.total / meta.pageSize));
   return NextResponse.json(
     {
@@ -73,7 +74,8 @@ export function paginated<T>(
         hasNext: meta.page < totalPages,
         hasPrev: meta.page > 1,
       },
-    },
+      ...(extra !== undefined && { extra }),
+    } as PaginatedResponse<T, E>,
     { status },
   );
 }

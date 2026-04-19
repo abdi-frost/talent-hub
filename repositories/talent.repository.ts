@@ -26,6 +26,14 @@ export type TalentListFilters = {
   primarySkill?: string;
   /** Full-text search across fullName and email */
   search?: string;
+  /** Filter by skills the talent must have */
+  skills?: string[];
+  /** "all" = talent must have every listed skill; "any" = at least one */
+  skillsMatch?: "all" | "any";
+  /** Column to sort by */
+  sortBy?: "createdAt" | "yearsOfExperience" | "fullName" | "status";
+  /** Sort direction */
+  sortDir?: "asc" | "desc";
 };
 
 export const talentRepository = {
@@ -86,15 +94,24 @@ export const talentRepository = {
             { description: { contains: filters.search, mode: "insensitive" } },
           ],
         }),
+        ...(filters.skills && filters.skills.length > 0 &&
+          (filters.skillsMatch === "all"
+            ? {
+                AND: filters.skills.map((s) => ({
+                  skills: { has: s },
+                })),
+              }
+            : {
+                skills: { hasSome: filters.skills },
+              })),
       };
 
+      const sortBy = filters.sortBy ?? "createdAt";
+      const sortDir = filters.sortDir ?? "desc";
+      const orderBy: Prisma.TalentOrderByWithRelationInput = { [sortBy]: sortDir };
+
       const [data, total] = await Promise.all([
-        prisma.talent.findMany({
-          where,
-          skip,
-          take: pageSize,
-          orderBy: { createdAt: "desc" },
-        }),
+        prisma.talent.findMany({ where, skip, take: pageSize, orderBy }),
         prisma.talent.count({ where }),
       ]);
 

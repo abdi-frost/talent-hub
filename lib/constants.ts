@@ -3,6 +3,7 @@
 
 export enum TalentStatus {
   PENDING = "PENDING",
+  REVIEWED = "REVIEWED",
   APPROVED = "APPROVED",
   REJECTED = "REJECTED",
 }
