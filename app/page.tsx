@@ -105,7 +105,33 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ── Made by ─────────────────────────────────── */}
+      <section className="py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <p className="font-mono text-xs uppercase tracking-widest text-[var(--color-muted)]">
+            Made by
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-6">
+            <a
+              href="https://github.com/abdi-frost"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium underline underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+            >
+              github.com/abdi-frost
+            </a>
+            <a
+              href="https://abdimegersa.dev"
+              target="_blank"
+              rel="noreferrer"
+              className="text-sm font-medium underline underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
+            >
+              abdimegersa.dev
+            </a>
+          </div>
+        </div>
+      </section>
     </main>
   );
 }
-
