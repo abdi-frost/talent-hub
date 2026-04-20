@@ -4,12 +4,13 @@
  * Accepts { email } and if an admin with that email exists:
  *  1. Generates a cryptographically-random reset token
  *  2. Stores a SHA-256 hash of the token + 1-hour expiry on the admin record
- *  3. Sends the reset link via EmailJS REST API (server-side only — no browser SDK)
+ *  3. Sends the reset link via Resend with a branded HTML email
  *
  * Always responds 200 to prevent user enumeration.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes, createHash } from "crypto";
+import { sendPasswordResetEmail } from "@/lib/email";
 import { adminRepository } from "@/repositories";
 import { withErrorHandling } from "@/lib/handle-route";
 
@@ -17,48 +18,6 @@ const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 function sha256(token: string): string {
   return createHash("sha256").update(token).digest("hex");
-}
-
-async function sendResetEmail(
-  toEmail: string,
-  toName: string,
-  resetLink: string,
-): Promise<void> {
-  const serviceId = process.env.EMAILJS_SERVICE_ID;
-  const templateId = process.env.EMAILJS_TEMPLATE_ID;
-  const publicKey = process.env.EMAILJS_PUBLIC_KEY;
-  const privateKey = process.env.EMAILJS_PRIVATE_KEY;
-
-  if (!serviceId || !templateId || !publicKey) {
-    console.error("[forgot-password] EmailJS env vars not configured");
-    return;
-  }
-
-  const body: Record<string, unknown> = {
-    service_id: serviceId,
-    template_id: templateId,
-    user_id: publicKey,
-    template_params: {
-      to_email: toEmail,
-      to_name: toName,
-      reset_link: resetLink,
-      expiry: "1 hour",
-    },
-  };
-
-  // Private key is required when the EmailJS account is in strict mode
-  if (privateKey) body.accessToken = privateKey;
-
-  const res = await fetch("https://api.emailjs.com/api/v1.0/email/send", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    console.error("[forgot-password] EmailJS returned", res.status, text);
-  }
 }
 
 const SAFE_OK = NextResponse.json(
@@ -94,7 +53,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   await adminRepository.setResetToken(admin.id, hashedToken, expiresAt);
 
   const baseUrl =
-    process.env.NEXTAUTH_URL ??
     process.env.APP_BASE_URL ??
     request.headers.get("origin") ??
     "http://localhost:3000";
@@ -102,7 +60,12 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   const resetLink = `${baseUrl}/admin/reset-password?token=${rawToken}`;
 
   // Fire-and-forget — email delivery failure must not reveal server internals
-  sendResetEmail(admin.email, admin.username, resetLink).catch((err) =>
+  sendPasswordResetEmail({
+    toEmail: admin.email,
+    toName: admin.username,
+    actionLink: resetLink,
+    expiresIn: "1 hour",
+  }).catch((err) =>
     console.error("[forgot-password] Unexpected send error:", err),
   );
 

@@ -4,12 +4,17 @@
  * Validates the reset token, then replaces the admin's password.
  */
 import { NextRequest } from "next/server";
+import { createHash } from "crypto";
 import bcrypt from "bcryptjs";
 import { withErrorHandling } from "@/lib/handle-route";
 import { adminRepository } from "@/repositories";
 import { AppError } from "@/lib/errors";
 import { resetPasswordSchema } from "@/lib/validations";
 import { success, failure } from "@/lib/response";
+
+function sha256(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
   const body = await request.json().catch(() => ({}));
@@ -20,8 +25,9 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   }
 
   const { token, newPassword } = parsed.data;
+  const hashedToken = sha256(token);
 
-  const admin = await adminRepository.findByResetToken(token);
+  const admin = await adminRepository.findByResetToken(hashedToken);
   if (!admin) {
     throw AppError.badRequest("This reset link is invalid or has expired.");
   }

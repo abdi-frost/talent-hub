@@ -3,16 +3,13 @@ import { getIronSession } from "iron-session";
 import type { SessionData } from "@/lib/auth";
 import { sessionOptions } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow unauthenticated access to the login and reset-password pages
   if (pathname === "/admin/login" || pathname === "/admin/reset-password") {
     return NextResponse.next();
   }
 
-  // iron-session reads from request.cookies (ReadonlyRequestCookies).
-  // We only READ here (no session.save()), so the read-only cookies suffice.
   const session = await getIronSession<SessionData>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     request.cookies as any,
@@ -29,7 +26,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Protect all /admin routes except /admin/login
   matcher: ["/admin/:path*"],
 };
-

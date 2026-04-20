@@ -75,7 +75,13 @@ DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/DB_NAME
 SESSION_SECRET=your-32+char-random-secret
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=P@ssw0rd
+APP_BASE_URL=http://localhost:3000
+RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxxx
+RESEND_FROM_EMAIL="Talent Hub <auth@yourdomain.com>"
+RESEND_REPLY_TO=support@yourdomain.com
 ```
+
+Talent Hub sends admin invites and password-reset emails through Resend. Verify your sending domain in Resend before using a custom `RESEND_FROM_EMAIL` in production.
 
 ### 3) Initialize database
 ```bash
