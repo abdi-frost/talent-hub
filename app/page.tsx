@@ -116,7 +116,7 @@ export default async function HomePage() {
             <a
               href="https://github.com/abdi-frost"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="text-sm font-medium underline underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
             >
               github.com/abdi-frost
@@ -124,7 +124,7 @@ export default async function HomePage() {
             <a
               href="https://abdimegersa.dev"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               className="text-sm font-medium underline underline-offset-4 hover:text-[var(--color-accent)] transition-colors"
             >
               abdimegersa.dev
