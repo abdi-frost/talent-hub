@@ -51,12 +51,12 @@ describe("talentSubmissionSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects skills not in predefined list", () => {
+  it("accepts arbitrary skill labels from the dynamic catalog", () => {
     const result = talentSubmissionSchema.safeParse({
       ...validPayload,
       skills: ["NotASkill"],
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
   });
 
   it("rejects empty skills array", () => {
